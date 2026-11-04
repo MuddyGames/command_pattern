@@ -5,9 +5,6 @@
 
 #include "player.h"
 
-// Forward declaration of the Mediator struct
-typedef struct Mediator Mediator;
-
 // Define the Command enum combining different commands into bit flags
 // Movement could be defined as just MOVE with direction (for simplicity, each direction is separate)
 
