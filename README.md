@@ -1,4 +1,4 @@
-# Practical 7: The Command Pattern
+# Practical 8: The Command Pattern
 
 In this practical you'll split "which key was pressed" from "what the player does". Every key press becomes a **command**, commands are packed into a single number using **bit flags**, and a **mediator** hands them to everything that needs them: the player, and a HUD that shows what's happening. Your job is to add new commands, such as DODGE and DASH, and to combine them.
 
