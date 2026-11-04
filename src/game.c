@@ -50,7 +50,7 @@ void DrawGame(const GameData *data)
 // Close Game and free resources
 void CloseGame(GameData *data)
 {
-	printf("Game Closed!\n");
+	TraceLog(LOG_INFO, "Game Closed!");
 
 	// Free Mediator
 	if (data->mediator)
