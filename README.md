@@ -1,10 +1,10 @@
-# Practical 6: Collision Detection with cute_c2
+# Practical 7: The Command Pattern
 
-In this practical you'll make shapes bump into each other. A player circle follows your mouse and changes colour when it hits an NPC. Your job is to teach it about capsules and rays as well.
+In this practical you'll split "which key was pressed" from "what the player does". Every key press becomes a **command**, commands are packed into a single number using **bit flags**, and a **mediator** hands them to everything that needs them: the player, and a HUD that shows what's happening. Your job is to add new commands, such as DODGE and DASH, and to combine them.
 
-By the end you'll understand how games check whether shapes overlap, and how to push them apart when they do.
+By the end you'll understand how games turn input into actions, why that split makes controls easy to change, and how one number can hold several commands at once.
 
-> Collision detection uses [cute_c2](https://github.com/RandyGaul/cute_headers) by Randy Gaul: a single header file, no setup needed. The project was generated with [raylib project creator](https://raysan5.itch.io/raylib-project-creator) by raysan5.
+> The project was generated with [raylib project creator](https://raysan5.itch.io/raylib-project-creator) by raysan5.
 
 ---
 
@@ -17,7 +17,7 @@ If you just want to get going, this is the whole thing in a few lines:
 ```bash
 mkdir -p ~/Projects
 cd ~/Projects
-git clone https://github.com/MuddyGames/collision_detection
+git clone https://github.com/MuddyGames/command_pattern.git
 ```
 
 **2. Set up raylib**
@@ -25,14 +25,14 @@ git clone https://github.com/MuddyGames/collision_detection
 *Linux:*
 
 ```bash
-cd ~/Projects/collision_detection/setup
+cd ~/Projects/command_pattern/setup
 bash setup_linux.sh
 ```
 
 or make the script executable and run it directly:
 
 ```bash
-cd ~/Projects/collision_detection/setup
+cd ~/Projects/command_pattern/setup
 chmod +x setup_linux.sh
 ./setup_linux.sh
 ```
@@ -40,14 +40,14 @@ chmod +x setup_linux.sh
 *Windows* (install [raylib](https://raysan5.itch.io/raylib) first, and then use w64devkit terminal):
 
 ```bash
-cd ~/Projects/collision_detection/setup
+cd ~/Projects/command_pattern/setup
 sh setup_windows.sh
 ```
 
 **3. Build and run**
 
 ```bash
-cd ~/Projects/collision_detection
+cd ~/Projects/command_pattern
 make run                            # desktop
 ```
 
@@ -67,10 +67,10 @@ Then type the same commands on both:
 ```bash
 mkdir -p ~/Projects
 cd ~/Projects
-git clone https://github.com/MuddyGames/collision_detection
+git clone https://github.com/MuddyGames/command_pattern.git
 ```
 
-Your project now lives in `~/Projects/collision_detection`.
+Your project now lives in `~/Projects/command_pattern`.
 
 ---
 
@@ -81,7 +81,7 @@ If you set these up for an earlier practical, skip this step. They're shared by 
 ### Linux (Debian, Ubuntu, Pop!_OS or Arch)
 
 ```bash
-cd ~/Projects/collision_detection/setup
+cd ~/Projects/command_pattern/setup
 bash setup_linux.sh
 ```
 
@@ -92,7 +92,7 @@ It will ask for your password to install packages. It takes a few minutes, espec
 Install the **[raylib installer](https://raysan5.itch.io/raylib)** and keep the default location, `C:\raylib`. Then in the **w64devkit** terminal:
 
 ```bash
-cd ~/Projects/collision_detection/setup
+cd ~/Projects/command_pattern/setup
 sh setup_windows.sh
 ```
 
@@ -109,7 +109,7 @@ For the manual steps, see the [drawing_primitives README](https://github.com/Mud
 Every command runs from the project folder:
 
 ```bash
-cd ~/Projects/collision_detection
+cd ~/Projects/command_pattern
 ```
 
 ### On your desktop
@@ -123,7 +123,7 @@ The same commands work on Linux and Windows (w64devkit):
 | `make BUILD_MODE=DEBUG` | Builds with debug info, for stepping through in the debugger |
 | `make clean` | Deletes the `build` folder, so the next build starts fresh |
 
-A window should open with a circle that follows your mouse. Steer it into an NPC and watch it change colour.
+A window should open with a player you can move with the keyboard or a controller. Try moving and jumping at the same time.
 
 ### In your browser
 
@@ -132,7 +132,7 @@ make run_web
 ```
 
 This builds the web version, starts a small local web server and opens
-**<http://127.0.0.1:8000/collision_detection.html>** in your browser.
+**<http://127.0.0.1:8000/command_pattern.html>** in your browser.
 
 Press **Ctrl+C** in the terminal to stop the server.
 
@@ -150,102 +150,124 @@ Open `projects/VSCode/main.code-workspace` (**File → Open Workspace from File�
 - **F5** builds and starts the debugger. The first time, choose **Debug** in the Run and Debug drop-down.
 - **Terminal → Run Task** lists Run, Run Web, Stop Web Server and Clean.
 
-Set a breakpoint inside a collision check, then hover over the shapes to see their positions and sizes. It's the quickest way to find out why two shapes that *look* touching aren't.
+Set a breakpoint in `ExecuteCommand()` in `command.c`, then hold two keys and look at `command` in the debugger. Right-click it and choose a binary or hex view to see exactly which bits are set.
 
 ---
 
 ## How the project is laid out
 
 ```
-collision_detection/
+command_pattern/
 ├── Makefile               build instructions
 ├── src/
 │   ├── main.c             opens the window, runs the game loop
-│   ├── game.c             YOUR collision code goes here
-│   ├── tests.c            sample collision tests
-│   └── cute_c2_impl.c     switches on cute_c2 (leave alone)
+│   ├── input_manager.c    turns key, mouse and button presses into commands
+│   ├── mediator.c         passes each command to the player and the HUD
+│   ├── command.c          ExecuteCommand(): which player action each command triggers
+│   ├── player.c           what the player can do (move, jump, fire…)
+│   ├── hud.c              shows the active commands on screen
+│   └── game.c             sets up, updates and draws the game
 ├── include/
-│   ├── constants.h        screen size and other constants
+│   ├── command.h          the command bit flags and command functions
+│   ├── input_manager.h    input polling
+│   ├── mediator.h         the mediator
+│   ├── player.h           Player struct and actions
+│   ├── hud.h              Hud struct
 │   ├── game.h             game functions
-│   ├── game_object.h      Player and NPC
-│   ├── tests.h            test declarations
-│   └── cute_c2.h          the collision library (leave alone)
+│   └── constants.h        screen size, FPS and other constants
 ├── resources/             sprites and images
 ├── build/                 everything make creates
 ├── platform/              icons and web page template; leave these alone
 └── setup/                 setup scripts (run once)
 ```
 
-[![](https://mermaid.ink/img/pako:eNqNVduO2jAQ_RXLT60EKCRc88Zmq6pqWaGl-1JAK5MYYimxI9tBUODf13bu2bTCD048Pmfm2DOTXKHPAgxd2O_3t1QSGWHXY1FEBGEUrCXiEvOfRAKPxQkTRGrzK46QfhEhSQTYUsPF_JmgI0fxlgI1vqMYPyOJwO3W799uYBWhC-bABT6jEhEqOmDsCl5WnsJsYYHavLwt35VxvdvCjJHNGpd7NnIDzH9fEmy4IRJAqkXBqGF9e4koObAo-KSkQDGN8gj3o8xbSvWRYxzvMW97NNjF4unpMaSHEpH-x2025zdVKi61NPVmc7ldwk_lHSRf8oR9LQLkYjuwMaEPgNC5AhWH6cChh1D75rFrqclroQ42Z_fle8IIlWJj76oQDVorBmU8RhEwZ2sV3DVb66FcgsxxZcuzkJhHZdb5pIkvNs6uyfeLpvFYSmWd4oeIq0QLgY54Y1tWTrx35LymqUysbx7Vhip3xnU4xjscaX3XBrjqDdMT__ajx56xCBCR0Qg91vWU9xznL9VmVsx-HqxDVkNHTR-maQy8H6_er28to67BNm6xWr8VwHtnFzQu8ASSanmIGJKAd5JNvbeouiGaBlX8nZHzCm_xUXO5f0xJecfXdnWpomq7CHAiQ9MLjVCfW6WxTTsDn-oRM_fntuGSM2EPHjkJoCt5inswxqrH9BIaF1soQxyrj6_uwQAfUBpJ3X6aliD6h7G4YHKWHkPoHlAk1CpNAiRx_hMpIZiqsjE9BV1nZBkf0L3CM3SH9nQwt0bjiTO3nJk1m_TgBbrT4cCeDmeq0SYzZzx3Zvce_GuCWoP5yHKcseWMR7PJZGQPexAHRDK-zP6B5ld4_wCLMhex?type=png)](https://mermaid.live/edit#pako:eNqNVduO2jAQ_RXLT60EKCRc88Zmq6pqWaGl-1JAK5MYYimxI9tBUODf13bu2bTCD048Pmfm2DOTXKHPAgxd2O_3t1QSGWHXY1FEBGEUrCXiEvOfRAKPxQkTRGrzK46QfhEhSQTYUsPF_JmgI0fxlgI1vqMYPyOJwO3W799uYBWhC-bABT6jEhEqOmDsCl5WnsJsYYHavLwt35VxvdvCjJHNGpd7NnIDzH9fEmy4IRJAqkXBqGF9e4koObAo-KSkQDGN8gj3o8xbSvWRYxzvMW97NNjF4unpMaSHEpH-x2025zdVKi61NPVmc7ldwk_lHSRf8oR9LQLkYjuwMaEPgNC5AhWH6cChh1D75rFrqclroQ42Z_fle8IIlWJj76oQDVorBmU8RhEwZ2sV3DVb66FcgsxxZcuzkJhHZdb5pIkvNs6uyfeLpvFYSmWd4oeIq0QLgY54Y1tWTrx35LymqUysbx7Vhip3xnU4xjscaX3XBrjqDdMT__ajx56xCBCR0Qg91vWU9xznL9VmVsx-HqxDVkNHTR-maQy8H6_er28to67BNm6xWr8VwHtnFzQu8ASSanmIGJKAd5JNvbeouiGaBlX8nZHzCm_xUXO5f0xJecfXdnWpomq7CHAiQ9MLjVCfW6WxTTsDn-oRM_fntuGSM2EPHjkJoCt5inswxqrH9BIaF1soQxyrj6_uwQAfUBpJ3X6aliD6h7G4YHKWHkPoHlAk1CpNAiRx_hMpIZiqsjE9BV1nZBkf0L3CM3SH9nQwt0bjiTO3nJk1m_TgBbrT4cCeDmeq0SYzZzx3Zvce_GuCWoP5yHKcseWMR7PJZGQPexAHRDK-zP6B5ld4_wCLMhex)
-
-`main.c` runs the show. Your code goes into four functions in `game.c`:
-
-| Function | When it runs | Put this in it |
-|---|---|---|
-| `InitGame()` | Once, at the start | Create the player and NPC shapes |
-| `UpdateGame()` | Every frame | Move the player, check collisions, push shapes apart |
-| `DrawGame()` | Every frame | Draw every shape, coloured by whether it's colliding |
-| `CloseGame()` | Once, at the end | Unload any textures |
-
-**Why `cute_c2_impl.c`?** `cute_c2.h` is a single-header library. Every file that includes it gets the declarations, but exactly one `.c` file must also `#define CUTE_C2_IMPLEMENTATION` before including it, to get the actual code. That's all `cute_c2_impl.c` does. Add that define anywhere else and you'll get "multiple definition" errors.
-
----
-
-## The shapes
-
-cute_c2 has four shapes you'll use:
+Each frame, `main.c` calls `UpdateGame()`, then `DrawGame()`. `UpdateGame()` is where input turns into action:
 
 ```c
-// Circle: centre and radius
-c2Circle circle = { .p = {x, y}, .r = radius };
-
-// AABB (axis-aligned bounding box): a rectangle that never rotates
-c2AABB box = { .min = {x, y},              // top-left on screen (smallest x and y)
-                .max = {x + w, y + h} };   // bottom-right on screen
-
-// Capsule: a line segment with a radius, like a pill
-c2Capsule capsule = { .a = {x1, y1}, .b = {x2, y2}, .r = radius };
-
-// Ray: a starting point, a direction and how far it reaches
-c2Ray ray = { .p = {x, y},
-              .d = c2Norm(c2V(dx, dy)),   // direction must be length 1
-              .t = length };
-```
-
-> **raylib's y goes down.** On screen, `min` is the **top-left** corner of an AABB, not the bottom-left as in maths class.
-
-> **Normalise ray directions.** `c2Norm()` makes the direction length 1. Forget it and `t` stops meaning distance.
-
-Converting to raylib for drawing is simple, because a `c2v` and a `Vector2` are both just two floats:
-
-```c
-DrawCircleV((Vector2){ circle.p.x, circle.p.y }, circle.r, BLUE);
-DrawRectangleLines(box.min.x, box.min.y, box.max.x - box.min.x, box.max.y - box.min.y, GREEN);
-```
-
----
-
-## Hit or not, and how much: manifolds
-
-`c2CircletoCircle(a, b)` just answers **yes or no**. Often you need more: *how far* do they overlap, and *which way* should they move apart? That's a **manifold**:
-
-```c
-c2Manifold m;
-c2CircletoAABBManifold(player.shape, wall, &m);
-
-if (m.count > 0) {
-    // m.n         direction from the player towards the wall (length 1)
-    // m.depths[0] how far they overlap
-    // m.contact_points[0] where they touch
-
-    // Push the player back out, so it stops at the wall instead of sinking in
-    player.shape.p = c2Sub(player.shape.p, c2Mulvs(m.n, m.depths[0]));
+void UpdateGame(GameData *data, float deltaTime)
+{
+    data->activeCommand = PollInput();                                        // keys and buttons -> command bits
+    MediatorHandleCommand(data->mediator, data->activeCommand, deltaTime);    // command bits -> player actions
 }
 ```
 
-The normal points **from the first shape to the second**, so you subtract it to move the first shape back. The starter code only detects hits; pushing apart is up to you in Task 4.
+The mediator then passes the command to its two **colleagues**:
 
-[![](https://mermaid.ink/img/pako:eNp1VNty2jAQ_RWN-goUSIzB06YD5hLCJQSSh9bmwdgLaGpLHlmelBr-vZJsEzPT8CAknbO7R0drZdhnAWAL1-t1lwoiQrCQzcKQJIRRNAQBvlCzccjeXapZLj1wLz6i16FLkfz1nbc48ARMvAiQ7YUhBFtUrz-ggTMBgRYsTQCtWEJUom0eM9AEu4hEceidgDdiJBiKFL-g2Zo2dDYyj1-qykVBgL6jvRdeuUPNHTlzxmSeI2fp4YiWKzsp8HwcadY4kwB6PcXw41JFxwo929O1PR-d0cTx2zbhfgiC5f_bKq3fHwzO6LFCUjs3FLu_2rypVNNqKi9O0muufJxoWU_Z1fpS12MO5ItpdZGPT7rOT0jOaFbaxLi0Zj0abquUJTuj-Q1jMH8b3YiY6fSLbEx4UvH7245_fXgn4ihdJYmytBS3-Ci-dKbU5xABVZEpFcB1XD8IUMwIFeU1LK5qnp3NbxIjUsbdaFlqLSstmCTaloDQg5QteFp695yT8sVcL17-E1Htknxcae46WzAOukfKE73kQJW7_jjkqLqjjrApGziCJPEOgBLBZc2i1kYne3XWIFJOVW8f1CcSyga9UZOIUwiyBfYkDK0vfhc6fq-KPH6KTD9FZgWy3_tB0K4i8wLZ7QLY76rI8hqz7_n3uIYj4JFHAvk8ZIrnYnGUN-ViS05lsJeGwsUuvUiqlwq2OVEfW-p-alh_ftjS1tdwql0aEk--HNF1N_boL8aiMuTAVakiHGgA3FaNhK1W1-hqNrYy_Adb7Z7R6DZbpmF2W22jhk_Yqt_1eo2W0TYM8868a953epca_quTtxpm12w3my3jvmPKidmpYQiIYHyRP336Bbz8A3xkhyk?type=png)](https://mermaid.live/edit#pako:eNp1VNty2jAQ_RWN-goUSIzB06YD5hLCJQSSh9bmwdgLaGpLHlmelBr-vZJsEzPT8CAknbO7R0drZdhnAWAL1-t1lwoiQrCQzcKQJIRRNAQBvlCzccjeXapZLj1wLz6i16FLkfz1nbc48ARMvAiQ7YUhBFtUrz-ggTMBgRYsTQCtWEJUom0eM9AEu4hEceidgDdiJBiKFL-g2Zo2dDYyj1-qykVBgL6jvRdeuUPNHTlzxmSeI2fp4YiWKzsp8HwcadY4kwB6PcXw41JFxwo929O1PR-d0cTx2zbhfgiC5f_bKq3fHwzO6LFCUjs3FLu_2rypVNNqKi9O0muufJxoWU_Z1fpS12MO5ItpdZGPT7rOT0jOaFbaxLi0Zj0abquUJTuj-Q1jMH8b3YiY6fSLbEx4UvH7245_fXgn4ihdJYmytBS3-Ci-dKbU5xABVZEpFcB1XD8IUMwIFeU1LK5qnp3NbxIjUsbdaFlqLSstmCTaloDQg5QteFp695yT8sVcL17-E1Htknxcae46WzAOukfKE73kQJW7_jjkqLqjjrApGziCJPEOgBLBZc2i1kYne3XWIFJOVW8f1CcSyga9UZOIUwiyBfYkDK0vfhc6fq-KPH6KTD9FZgWy3_tB0K4i8wLZ7QLY76rI8hqz7_n3uIYj4JFHAvk8ZIrnYnGUN-ViS05lsJeGwsUuvUiqlwq2OVEfW-p-alh_ftjS1tdwql0aEk--HNF1N_boL8aiMuTAVakiHGgA3FaNhK1W1-hqNrYy_Adb7Z7R6DZbpmF2W22jhk_Yqt_1eo2W0TYM8868a953epca_quTtxpm12w3my3jvmPKidmpYQiIYHyRP336Bbz8A3xkhyk)
+```c
+void MediatorHandleCommand(Mediator *mediator, Command command, float deltaTime)
+{
+    ExecuteCommand(command, mediator->player, deltaTime);   // 1. the player acts on it
+    UpdateHud(mediator->hud, command);                      // 2. the HUD shows it
+}
+```
+
+Two patterns, two separations:
+
+- **Command:** `input_manager.c` knows nothing about the player, and `player.c` knows nothing about keys. That's why you can change the controls without touching the player, or give the same commands to an AI instead of a keyboard.
+- **Mediator:** the player and the HUD know nothing about each other. The mediator is the only place that knows about both. Want a sound when the player jumps? Add a third colleague to the mediator. The player and the HUD don't change.
+
+---
+
+## Input to action
+
+[![](https://mermaid.ink/img/pako:eNqdlF1vmzAUhv-K5d60GknNZ4BFkZqPSvuIVrW72tiFA8cEzdiRMW2yJP99DhCW3kWDG3z8vC_nHDje41RmgGM8GAwSoQvNIf4kNrVGWqInTneg0BTW9LWQtUpEQ-WKbtbo-zwRyFwPPxP8BXYrSVWGvj2jmRRaSc5BJfhXi0wN0pouqaA5qPFK3U_GleFEPnkycLN7eze-72K9dGakS8gKqmWrup0Dh5xqqO56aG6gmSxLKjL0sqs0lC262EJaa0Dd3j_Bwgja4h5SXUjxLp-lfIWvwEw6H_t8GsBYvAM_1-XmEurtu8agwWByeKZvqKnugKZdN5r4tNDokdO8aixhmCNim5sc0KyrvMHOZX3oPsYBdW2ft9uU8wo91qIpozqgxWUGld5xMHmwgvP4BlzmsMw6Jfsb4hs7GgWZ0y0Hb0Wm17G72Vqp5FLFN4SQS5NpZ8IYc4H0JswfpYRcazI7m7jgM783Ga1sRq_OZH4uJ2Q-RL2JG4bgpteaLP63J9jCJaiSFpmZmf3JMsF6DSUkODaPGTBac53gRBwNSmstX3YixbFWNVhYyTpf45hRXplVvcnMfzwvqBmoso9uqPghZXmW5Or0qk4OIgM1k7XQOHZsu4FxvMdbHNueN4wCEo4CL_BCzx35Ft4ZikTDIAq9kU2CyHX9yDta-E_jT4Z-6PpO4DgR8T3H80MLm0kzg7Zsj4TmZDj-BWiHT38?type=png)](https://mermaid.live/edit#pako:eNqdlF1vmzAUhv-K5d60GknNZ4BFkZqPSvuIVrW72tiFA8cEzdiRMW2yJP99DhCW3kWDG3z8vC_nHDje41RmgGM8GAwSoQvNIf4kNrVGWqInTneg0BTW9LWQtUpEQ-WKbtbo-zwRyFwPPxP8BXYrSVWGvj2jmRRaSc5BJfhXi0wN0pouqaA5qPFK3U_GleFEPnkycLN7eze-72K9dGakS8gKqmWrup0Dh5xqqO56aG6gmSxLKjL0sqs0lC262EJaa0Dd3j_Bwgja4h5SXUjxLp-lfIWvwEw6H_t8GsBYvAM_1-XmEurtu8agwWByeKZvqKnugKZdN5r4tNDokdO8aixhmCNim5sc0KyrvMHOZX3oPsYBdW2ft9uU8wo91qIpozqgxWUGld5xMHmwgvP4BlzmsMw6Jfsb4hs7GgWZ0y0Hb0Wm17G72Vqp5FLFN4SQS5NpZ8IYc4H0JswfpYRcazI7m7jgM783Ga1sRq_OZH4uJ2Q-RL2JG4bgpteaLP63J9jCJaiSFpmZmf3JMsF6DSUkODaPGTBac53gRBwNSmstX3YixbFWNVhYyTpf45hRXplVvcnMfzwvqBmoso9uqPghZXmW5Or0qk4OIgM1k7XQOHZsu4FxvMdbHNueN4wCEo4CL_BCzx35Ft4ZikTDIAq9kU2CyHX9yDta-E_jT4Z-6PpO4DgR8T3H80MLm0kzg7Zsj4TmZDj-BWiHT38)
+
+> **Flow:**
+>
+> 1. **Input devices:** the player presses keys or buttons.
+> 2. **Input manager:** turns them into command bits, such as `MOVE_UP | FIRE`.
+> 3. **Mediator:** passes the command to each colleague: the player (through `ExecuteCommand()`) and the HUD.
+> 4. **Player and HUD:** the player performs the action, or several in the same frame; the HUD shows which commands are active.
+
+---
+
+## Commands as bit flags
+
+Every command gets its own bit, so one number can hold any mix of them:
+
+```c
+typedef enum
+{
+    NONE        = 0,        // No command
+    MOVE_UP     = 1 << 0,   // Binary: 000001
+    MOVE_DOWN   = 1 << 1,   // Binary: 000010
+    MOVE_LEFT   = 1 << 2,   // Binary: 000100
+    MOVE_RIGHT  = 1 << 3,   // Binary: 001000
+    JUMP        = 1 << 4,   // Binary: 010000
+    FIRE        = 1 << 5,   // Binary: 100000
+    // Add new commands here, e.g. DODGE, DASH
+    COUNT       = 6         // How many commands there are: NOT a flag
+} Command;
+```
+
+> **`COUNT` is a number, not a flag.** It's 6, which in binary is `000110`, the same bits as `MOVE_DOWN | MOVE_LEFT`. Never OR it into a command. When you add a command, increase `COUNT` by one.
+
+### Combining commands
+
+**Example:** the player moves **left** and **jumps** at the same time:
+
+```c
+Command combo = MOVE_LEFT | JUMP;
+// Binary: 000100 | 010000 = 010100
+// Result: both bits are set
+
+if (IsCommandActive(combo, MOVE_LEFT))   // TRUE: bit 2 is set
+    MoveLeft(player);
+
+if (IsCommandActive(combo, JUMP))        // TRUE: bit 4 is set
+    Jump(player);
+```
+
+[![](https://mermaid.ink/img/pako:eNqtlFtvmzAYhv-K69xsEmk5mYMVVcqBVKqaJWq7XWxMk4GPBA1wZMyaLOt_nyE0TTJN6kW5QLyfv_d5fRDe4ZgngCleCrZeocdJWCL1DL-FeCGgqigahvj7vjh6LT4shuPgMLB_j9XwbP4l-HEXTB8Hkbi6HmUlE1uKdF03dL0tTSDOCpZTZB_cE-W7_TxbnFqU4dxiOGeJgXKOMvmUVYDm92i-BsFkxsvWtg9FfzrUmXWqrPdQ1blss_6ZnrnXIy5XKMpkhZgAVIG8OOPcNFNomljcJFcINhDXEi5a-6CSgpfL6xn_BXeQyg8fB1ddqR0ffpqc9N3Wxfqo5yxriPr9azTuDqMV3XGNWxF0-3ksglZMu0W34uaYWcltDoqcZnlOe1GUQBppTfxPoD3Dd53E7GT_KUvkilrrjRbznAvaa3b1CDJ6D8i4g6Rp6sf2AZISNzXcU4j5X8jkPSDBC8QCkpIDxI2MlL15OdMOEhMw2CuEEC8y07dCbjoII4nD3APEBDexzmZin0CwhgsQBcsS9YPvGmSI5QoKCDFVn-qYmPoBQhyWz6qV1ZI_bMsYUylq0LDg9XKFacrySql6nTAJk4ypi6I4VNes_Mp58WJZiiaqs0OZgBjzupSYmqbRNmO6wxtMDdu-9B3dcx3bsT3bcomGt6pL9y8d37NdQ3d8yyK-_azh3y1fvySeRUzHND1fJ45HXA1DkkkuZvv7q73Gnv8CVgR0WA?type=png)](https://mermaid.live/edit#pako:eNqtlFtvmzAYhv-K69xsEmk5mYMVVcqBVKqaJWq7XWxMk4GPBA1wZMyaLOt_nyE0TTJN6kW5QLyfv_d5fRDe4ZgngCleCrZeocdJWCL1DL-FeCGgqigahvj7vjh6LT4shuPgMLB_j9XwbP4l-HEXTB8Hkbi6HmUlE1uKdF03dL0tTSDOCpZTZB_cE-W7_TxbnFqU4dxiOGeJgXKOMvmUVYDm92i-BsFkxsvWtg9FfzrUmXWqrPdQ1blss_6ZnrnXIy5XKMpkhZgAVIG8OOPcNFNomljcJFcINhDXEi5a-6CSgpfL6xn_BXeQyg8fB1ddqR0ffpqc9N3Wxfqo5yxriPr9azTuDqMV3XGNWxF0-3ksglZMu0W34uaYWcltDoqcZnlOe1GUQBppTfxPoD3Dd53E7GT_KUvkilrrjRbznAvaa3b1CDJ6D8i4g6Rp6sf2AZISNzXcU4j5X8jkPSDBC8QCkpIDxI2MlL15OdMOEhMw2CuEEC8y07dCbjoII4nD3APEBDexzmZin0CwhgsQBcsS9YPvGmSI5QoKCDFVn-qYmPoBQhyWz6qV1ZI_bMsYUylq0LDg9XKFacrySql6nTAJk4ypi6I4VNes_Mp58WJZiiaqs0OZgBjzupSYmqbRNmO6wxtMDdu-9B3dcx3bsT3bcomGt6pL9y8d37NdQ3d8yyK-_azh3y1fvySeRUzHND1fJ45HXA1DkkkuZvv7q73Gnv8CVgR0WA)
+
+> **What's happening?**
+>
+> 1. The player presses **A** (MOVE_LEFT) and **SPACE** (JUMP) at the same time.
+> 2. Each command has its own bit.
+> 3. `|` (OR) combines them: `000100 | 010000 = 010100`.
+> 4. Both bits are set, so both actions happen in the same frame.
+
+> **Why not `if (command == JUMP)`?** Because `010100` is not equal to `010000`. The moment the player also moves, `==` says "no jump". Always test single bits with `IsCommandActive()`, which uses `&` (AND).
 
 ---
 
@@ -253,110 +275,156 @@ The normal points **from the first shape to the second**, so you subtract it to 
 
 Already working in the starter code:
 
-- [x] Circle to Circle
-- [x] Circle to AABB
-- [x] Circle to Capsule
+- [x] MOVE_UP, MOVE_DOWN, MOVE_LEFT, MOVE_RIGHT (WASD or arrow keys, D-pad)
+- [x] JUMP (SPACE, or the bottom face button)
+- [x] FIRE (left mouse button, or the right trigger)
+- [x] Two combos: MOVE_UP + FIRE (`MoveUpFire`) and JUMP + FIRE (`JumpFire`)
+- [x] Idle "breathing" when there's no input
+- [x] Frame-rate independent movement: held actions move by `speed * deltaTime`
+- [x] A HUD showing the command bits, the active commands and a jump counter
 
 ### Task 1: Explore the starter code
 
-Run it and move the player into each NPC. Then find, in `game.c`:
+Run it, then find:
 
-1. where the player follows the mouse,
-2. where each collision is checked,
-3. where the colour changes on a hit,
-4. how the hit counter and points only go up on the **first** frame of a collision, not every frame the shapes overlap.
+1. in `input_manager.c`, where a key press sets a bit,
+2. in `command.c`, where `ExecuteCommand()` checks each bit,
+3. in `command.c`, how the two combos are checked **before** the single commands, and why they use `else if`,
+4. in `player.c`, the function that finally moves the player,
+5. in `command.h`, which bit each command uses,
+6. in `mediator.c`, the two colleagues the command is passed to. Check that `player.c` and `hud.c` never mention each other.
 
-### Task 2: Capsule collisions
+Then hold **two** keys and watch the console: `PollInput()` logs the command bits each time they change, e.g. `Command Bits: 010100 (20)` for MOVE_LEFT + JUMP.
 
-Add capsule NPCs and check them against the player:
+### Task 2: Add DODGE
 
-| Check | cute_c2 function |
-|---|---|
-| Capsule vs AABB | `c2AABBtoCapsule(box, capsule)` |
-| Capsule vs Capsule | `c2CapsuletoCapsule(a, b)` |
+Each new command needs a change in **four** places. Miss one and it silently does nothing.
 
-> Watch the argument order: there is no `c2CapsuletoAABB()`. cute_c2 always puts the "simpler" shape first: circle, then AABB, then capsule.
+1. **`command.h`:** give it the next free bit, and update `COUNT`:
 
-### Task 3: Ray collisions
+   ```c
+   DODGE = 1 << 6,   // Binary: 1000000
+   COUNT = 7
+   ```
 
-Add a ray, for example one from the player towards the mouse, and check it against each NPC:
+2. **`player.h` / `player.c`:** write what the player does:
 
-| Check | cute_c2 function |
-|---|---|
-| Ray vs Circle | `c2RaytoCircle(ray, circle, &out)` |
-| Ray vs AABB | `c2RaytoAABB(ray, box, &out)` |
-| Ray vs Capsule | `c2RaytoCapsule(ray, capsule, &out)` |
+   ```c
+   void Dodge(Player *player, float deltaTime);
+   ```
 
-Rays also tell you **where** they hit:
+   A dodge happens once per press, like `Jump()`, so move a fixed distance and ignore `deltaTime` with `(void)deltaTime;`. Something held every frame, like `MoveLeft()`, uses `speed * deltaTime` instead.
+
+3. **`input_manager.c`:** set the bit when the key is pressed:
+
+   ```c
+   if (IsKeyPressed(KEY_LEFT_SHIFT))
+       command |= DODGE;
+   ```
+
+4. **`command.c`:** in `ExecuteCommand()`, call the player function:
+
+   ```c
+   if (IsCommandActive(command, DODGE))
+       Dodge(player, deltaTime);
+   ```
+
+   Put it with the movement checks, **outside** the combo `if` / `else if` / `else`, so a dodge isn't skipped when a combo runs.
+
+5. **`hud.c` (optional):** show it on screen, by adding a line to `DrawHud()`:
+
+   ```c
+   DrawActiveCommand(hud->lastCommand, DODGE, "DODGE", &y, PURPLE);
+   ```
+
+   The HUD already shows the new bit in its `Command:` line, because it prints every bit up to `COUNT`.
+
+> **`IsKeyPressed` or `IsKeyDown`?** `IsKeyPressed` is true **once**, on the frame the key goes down: right for a dodge. `IsKeyDown` is true **every frame** the key is held: right for movement. Use the wrong one and the dodge fires 60 times a second, or movement stutters.
+
+### Task 3: Add DASH, with a controller button too
+
+Add DASH the same way as DODGE, using bit 7. This time bind it to a key **and** a controller button, so either one works:
 
 ```c
-c2Raycast out;
-if (c2RaytoCircle(ray, circle, &out)) {
-    c2v hit = c2Impact(ray, out.t);   // the point where the ray hits
-    DrawCircleV((Vector2){ hit.x, hit.y }, 4, RED);
-}
+if (IsKeyPressed(KEY_E) || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_LEFT))
+    command |= DASH;
 ```
 
-Draw the ray only as far as the hit point, like a laser stopped by the first thing in its way.
+`command.c` and the player don't care which device set the bit. That's the point of the pattern.
 
-[![](https://mermaid.ink/img/pako:eNp9lM-OmzAQxl_Fml4hCv9K8KFSYC89rFQ1eyrk4IJJLBkbGSNtGuXaa6W2p6qHPkafJy_QV6iBbJIViLl47O8334wlzBFyWVDAYNt2JjTTnGKUSM5Zw6RAD1TTXHfZB8JUk4key8ROkXqPnuJMIBNN-3k4yOB9VXNaUaFJX7Uxa9tkMHBdrNPNntR08Nsi236H4vRaRQt0_v1je4f3RJI-SXSF0PnXn39_v91RtyweHJ00YSrnFJ2__kRDuh1B7j20XsfxGPFe-ZC6aaeM_LSrnrK5ZclwETPY4DJFXxj3FTPuesG89CM5GOT7-IIXwr8S042Cm8OoyS1r9MGMEjuoZJzjN_mKvs2jkezOy9687M_KyUvvssyLwh3J7rzszcv-vBxMyFQUYMFOsQKwVi21oKKqIt0Wjh2Sgd6bbzUDbNKClqTlunsFJ1NWE_FJyuqlUsl2twdcEt6YXVsXRNMHRsyDqq6nyjSkKpGt0IAdd9mbAD7CM2A3WC78MAgDL1z5ThiFFhwAe9HCC4OTBV_6VsvFKvQjE6swcrxg6ToW0IJpqR6H59__BSwgrZabg8iH4U7_AUnCN_k?type=png)](https://mermaid.live/edit#pako:eNp9lM-OmzAQxl_Fml4hCv9K8KFSYC89rFQ1eyrk4IJJLBkbGSNtGuXaa6W2p6qHPkafJy_QV6iBbJIViLl47O8334wlzBFyWVDAYNt2JjTTnGKUSM5Zw6RAD1TTXHfZB8JUk4key8ROkXqPnuJMIBNN-3k4yOB9VXNaUaFJX7Uxa9tkMHBdrNPNntR08Nsi236H4vRaRQt0_v1je4f3RJI-SXSF0PnXn39_v91RtyweHJ00YSrnFJ2__kRDuh1B7j20XsfxGPFe-ZC6aaeM_LSrnrK5ZclwETPY4DJFXxj3FTPuesG89CM5GOT7-IIXwr8S042Cm8OoyS1r9MGMEjuoZJzjN_mKvs2jkezOy9687M_KyUvvssyLwh3J7rzszcv-vBxMyFQUYMFOsQKwVi21oKKqIt0Wjh2Sgd6bbzUDbNKClqTlunsFJ1NWE_FJyuqlUsl2twdcEt6YXVsXRNMHRsyDqq6nyjSkKpGt0IAdd9mbAD7CM2A3WC78MAgDL1z5ThiFFhwAe9HCC4OTBV_6VsvFKvQjE6swcrxg6ToW0IJpqR6H59__BSwgrZabg8iH4U7_AUnCN_k)
+### Task 4: Combine commands
 
-[![](https://mermaid.ink/img/pako:eNp1lF1vmzAUhv-K5Um9SqoEQhq4mERIP9I2_QjdJg1y4cIhWAMbwWFrVvW_zzGkc7Q1F47t9znnPeYYXmkiU6AeHQ6HsUCOBXhkWVYFlCCQIZeCPDDMY6GBbc2qnDzNY0HUz49CZDWSXxxzoqdQ33DckOHwM5lH61aQE_IEDZLzF94gF1sSKLdNFz3XWBB9ESnUDTKRkoDXSQEKKgreKOueDDS5iN7rIgGrmtYkmx7txoUOOI8SqwdR-v58vjHVC1PtJ0dJzjV2GekD_GPYoxcdZMZd6q0ro9o1231U6ZWGl6oWBak69APYmNr1QTNO0Ck371H_qX6pkdvIT1Ptj5JcshIWDFnPXXdEt7gxF914q7dWxjn2CapCJVtBkjPBkyPHlebvovtK3xrf075hLuW-8xsTuj9Ac4_4PyVPmUhApz_CHg5Y4JGwqjkCWQoEdQnxbwe68U4HPOrjfuVNywpyAZA-s-RHz913RLd4MBfd-Ki31tE37dM3vYFDu9ZaDqOFTFr9ME5I2D6X6rabSRrcqUvik4wXhfcJ7MzKUlMJeiWZwTRxTWXRK1mW2TAylasPldVBscHJHFMJj3zogJZQl4yn6kV_3XMxxVz1NKaemqaQsbbAmMbiTaGsRRnuREI9rFsY0Fq225x6GSsatWqrlCEsOFNdKN93Kya-S1keQrb13qoPh_37HchWIPUsy55omnqv9IV6tu2eutPZ1DpzLfV_5gzojnrDsT0-HTm2O3Mc1zkb2WPrbUB_awMlTCbOeGpPpq47UunsAYWUo6xX3YdMf8_e_gD_w3QP?type=png)](https://mermaid.live/edit#pako:eNp1lF1vmzAUhv-K5Um9SqoEQhq4mERIP9I2_QjdJg1y4cIhWAMbwWFrVvW_zzGkc7Q1F47t9znnPeYYXmkiU6AeHQ6HsUCOBXhkWVYFlCCQIZeCPDDMY6GBbc2qnDzNY0HUz49CZDWSXxxzoqdQ33DckOHwM5lH61aQE_IEDZLzF94gF1sSKLdNFz3XWBB9ESnUDTKRkoDXSQEKKgreKOueDDS5iN7rIgGrmtYkmx7txoUOOI8SqwdR-v58vjHVC1PtJ0dJzjV2GekD_GPYoxcdZMZd6q0ro9o1231U6ZWGl6oWBak69APYmNr1QTNO0Ck371H_qX6pkdvIT1Ptj5JcshIWDFnPXXdEt7gxF914q7dWxjn2CapCJVtBkjPBkyPHlebvovtK3xrf075hLuW-8xsTuj9Ac4_4PyVPmUhApz_CHg5Y4JGwqjkCWQoEdQnxbwe68U4HPOrjfuVNywpyAZA-s-RHz913RLd4MBfd-Ki31tE37dM3vYFDu9ZaDqOFTFr9ME5I2D6X6rabSRrcqUvik4wXhfcJ7MzKUlMJeiWZwTRxTWXRK1mW2TAylasPldVBscHJHFMJj3zogJZQl4yn6kV_3XMxxVz1NKaemqaQsbbAmMbiTaGsRRnuREI9rFsY0Fq225x6GSsatWqrlCEsOFNdKN93Kya-S1keQrb13qoPh_37HchWIPUsy55omnqv9IV6tu2eutPZ1DpzLfV_5gzojnrDsT0-HTm2O3Mc1zkb2WPrbUB_awMlTCbOeGpPpq47UunsAYWUo6xX3YdMf8_e_gD_w3QP)
+Try these combinations and check that both actions happen in the same frame:
 
-### Task 4: Push apart
+- MOVE_RIGHT + FIRE
+- MOVE_LEFT + JUMP
+- MOVE_UP + DODGE
 
-Use manifolds so the player can't pass through **any** NPC, not just the circles. Try `c2CircletoCapsuleManifold()` and `c2CircletoAABBManifold()`.
+Do any of them look wrong? For example, should you be able to dodge in mid-air? Decide, and make `ExecuteCommand()` enforce it.
 
-### Task 5: Test the edges
+### Task 5: A simple combo
 
-Collision bugs live at the edges. Check each pair:
+Make a sequence of inputs trigger something special:
 
-1. **Just touching:** shapes exactly side by side.
-2. **Fully inside:** one shape completely inside another.
-3. **Zero size:** a circle with radius 0, or an AABB with no width (what if the player shrinks?).
-4. **Fast movement:** move the player quickly. Does it ever jump straight through a thin wall?
+- **Double-tap D** within 0.3 seconds: DODGE. Store the time of the last tap with `GetTime()` and compare.
+- **Your own combo**, such as DASH + FIRE, following how `JumpFire` is handled in `ExecuteCommand()`.
 
-Write down what happens. "It works" is not a test result; "the circle stopped 0 pixels from the wall" is.
+Combos need memory between frames, so keep the extra state, such as the last tap time, in the input manager or the player, not in a local variable.
+
+### Task 6: A third colleague
+
+Give the mediator one more thing to tell. For example, a **sound** that plays on JUMP, or a **score** that goes up on FIRE:
+
+1. Create `sound.c` / `sound.h` (or `score.c` / `score.h`) with a struct and an `Update…()` function that takes a `Command`.
+2. Add a pointer to it in the `Mediator` struct, and pass it to `CreateMediator()`.
+3. Call its `Update…()` in `MediatorHandleCommand()`.
+
+The player and the HUD shouldn't change at all. If you find yourself editing `player.c`, stop and rethink.
+
+> Sound needs `InitAudioDevice()` after `InitWindow()`, and `LoadSound()` with a file in `resources/`.
+
+### Task 7: Stretch goals
+
+- **Smooth jump:** `Jump()` moves the player up instantly. Make it rise and fall over time instead, using a vertical speed, gravity and `deltaTime`. Test it with `SetTargetFPS(30)`: the jump should look the same at any frame rate.
+- **Record and replay:** save each frame's command in an array, then feed the array back through `MediatorHandleCommand()`. The player repeats your moves exactly, because it only ever sees commands.
+- **Configurable controls:** load the key for each command from a file, so players can remap them.
+- **Function pointers:** store one function pointer per command bit, so `ExecuteCommand()` loops through a table instead of a list of `if`s.
 
 ---
 
 ## Cheat sheet
 
 ```c
-#include "cute_c2.h"
+// Bit flags
+Command c = NONE;
+c |= JUMP;                     // turn a bit ON
+c &= ~JUMP;                    // turn a bit OFF
+c ^= JUMP;                     // flip a bit
+if (c & JUMP) { }              // is the bit on? (what IsCommandActive does)
+if (c == NONE) { }             // no commands at all this frame
 
-// Yes or no
-c2CircletoCircle(a, b);
-c2CircletoAABB(circle, box);
-c2CircletoCapsule(circle, capsule);
-c2AABBtoAABB(a, b);
-c2AABBtoCapsule(box, capsule);
-c2CapsuletoCapsule(a, b);
+// Keyboard and mouse
+IsKeyDown(KEY_A);              // true every frame the key is held
+IsKeyPressed(KEY_SPACE);       // true once, on the frame it goes down
+IsKeyReleased(KEY_SPACE);      // true once, on the frame it comes up
+IsMouseButtonDown(MOUSE_BUTTON_LEFT);
 
-// Rays: true if hit, details in out
-c2Raycast out;
-c2RaytoCircle(ray, circle, &out);
-c2RaytoAABB(ray, box, &out);
-c2RaytoCapsule(ray, capsule, &out);
-c2v hit = c2Impact(ray, out.t);
+// Controller (0 = first controller)
+IsGamepadAvailable(0);
+IsGamepadButtonDown(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT);      // D-pad left
+IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN);  // A on Xbox, Cross on PlayStation
+GetGamepadAxisMovement(0, GAMEPAD_AXIS_RIGHT_TRIGGER);      // how far the trigger is pulled
 
-// Manifolds: how far, and which way
-c2Manifold m;
-c2CircletoCircleManifold(a, b, &m);
-c2CircletoAABBManifold(circle, box, &m);
-c2CircletoCapsuleManifold(circle, capsule, &m);
-
-// Vector maths
-c2v v = c2V(x, y);
-c2Add(a, b);   c2Sub(a, b);   c2Mulvs(v, s);   c2Norm(v);   c2Len(v);
+// Timing (for combos)
+double now = GetTime();        // seconds since the game started
 ```
 
-A quick test to drop into `InitGame()`. The results print in the terminal:
+To print a command in binary while testing:
 
 ```c
-c2Circle c1 = { {100, 100}, 50 };
-c2Circle c2 = { {180, 100}, 50 };
-printf("Circles touching: %s\n", c2CircletoCircle(c1, c2) ? "yes" : "no");   // yes: 80 < 50 + 50
+char bits[COUNT + 1];
+GetCommandBits(command, bits);
+printf("Command: %s\n", bits);   // e.g. MOVE_LEFT | JUMP -> 010100
 ```
 
 ---
@@ -368,11 +436,15 @@ Don't panic. Nine times out of ten it's one of these:
 | You see… | What's going on | Fix |
 |---|---|---|
 | `raylib.h: No such file or directory` | make can't find raylib | Run the setup script again (Step 2) |
-| `multiple definition of 'c2…'` | `CUTE_C2_IMPLEMENTATION` is defined in more than one file | Only `cute_c2_impl.c` should define it |
-| `undefined reference to 'c2…'` | `cute_c2_impl.c` is missing or was renamed | Make sure it's in `src/` |
-| Collision never triggers | Shapes are in different places than you think | Draw every shape, every frame, and check the AABB `min`/`max` order |
-| Ray never hits | Direction isn't normalised, or `t` is too short | Use `c2Norm()`, and set `t` to the ray's length |
-| Player sinks into shapes | Collision is detected but nothing pushes back | Use a manifold (Task 4) |
+| New command does nothing | One of the four places is missing | Check `command.h`, `player.c`, `input_manager.c` **and** `command.c` (Task 2) |
+| New command does nothing during a combo | Its check is inside the combo's `else` | Move it outside the combo `if` / `else if` / `else` |
+| The terminal scrolls non-stop | A `printf` or `TraceLog` runs every frame, e.g. in a held action like `MoveLeft()` | Only log when something changes, like `PollInput()` does with `previousCommand` |
+| Two commands always happen together | They share the same bit | Give each command its own `1 << n` |
+| Action stops working when you also move | Testing with `==` instead of `&` | Use `IsCommandActive()` |
+| Dodge fires every frame while the key is held | `IsKeyDown` used for a one-off action | Use `IsKeyPressed` |
+| Movement is jerky | `IsKeyPressed` used for movement | Use `IsKeyDown` |
+| Controller does nothing | It isn't controller 0, or it was plugged in after the game started | Plug it in first, and check `IsGamepadAvailable(0)` |
+| `undefined reference to 'Dodge'` | Declared in `player.h` but not written in `player.c` | Add the function body |
 | `Emscripten not found in …` (Linux) | Emscripten isn't in `~/emsdk` | Run the setup script (Step 2) |
 | `emcc: No such file or directory` (Windows) | Emscripten isn't loaded in this terminal | Close w64devkit and open it again |
 | `Address already in use` | A web server from earlier is still running | `make stop_web`, or use another port: `make run_web WEB_PORT=8080` |
@@ -385,21 +457,23 @@ Still stuck? Read the **first** error message, not the last. The first one is us
 
 ## Further reading
 
-- [raylib cheatsheet](https://www.raylib.com/cheatsheet/cheatsheet.html) and [examples](https://www.raylib.com/examples.html)
-- [cute_c2 on GitHub](https://github.com/RandyGaul/cute_headers): read the comments at the top of `cute_c2.h`
-- [Collision Detection](https://www.jeffreythompson.org/collision-detection/) by Jeffrey Thompson: the maths behind each check, with diagrams
+- [Command](https://gameprogrammingpatterns.com/command.html) in *Game Programming Patterns* by Robert Nystrom: the classic explanation, written for games
+- [Command](https://refactoring.guru/design-patterns/command) and [Mediator](https://refactoring.guru/design-patterns/mediator) on Refactoring.Guru: diagrams and plain-English explanations
+- [raylib cheatsheet](https://www.raylib.com/cheatsheet/cheatsheet.html) and [examples](https://www.raylib.com/examples.html): see the input examples for keyboard and gamepad
 
 ---
 
 ## Before you submit
 
 - [ ] It compiles and runs with no errors or warnings
-- [ ] Capsule collisions work against AABBs and other capsules
-- [ ] Rays detect circles, AABBs and capsules, and show where they hit
-- [ ] The player can't pass through any NPC
-- [ ] You've written down what happened in each edge-case test
+- [ ] DODGE and DASH work, each with its own bit, and `COUNT` is updated
+- [ ] DASH works from both the keyboard and a controller
+- [ ] Combined commands work in the same frame
+- [ ] At least one new combo works
+- [ ] The mediator has a third colleague, and the player and HUD were not changed to add it
+- [ ] The input manager still knows nothing about the player
 - [ ] Your code is commented and tidy
 
-Commit early and commit often. A collision with a deadline is the one bug you can't fix afterwards.
+Commit early and commit often. Your deadline is one command nobody can remap.
 
-Best of luck. Now go make some things bump.
+Best of luck. Now go make something that responds.
