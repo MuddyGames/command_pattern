@@ -7,9 +7,10 @@
 // Player Structure Data
 typedef struct
 {
-    int x;
-    int y;
+    float x;
+    float y;
     int r;
+    float speed;
     int health;
     float breathTimer;
     Color color;
@@ -17,16 +18,16 @@ typedef struct
 
 // Player Behaviours
 void Idle(Player *player, float deltaTime);
-void MoveUp(Player *player);
-void MoveDown(Player *player);
-void MoveLeft(Player *player);
-void MoveRight(Player *player);
+void MoveUp(Player *player, float deltaTime);
+void MoveDown(Player *player, float deltaTime);
+void MoveLeft(Player *player, float deltaTime);
+void MoveRight(Player *player, float deltaTime);
 
-void Jump(Player *player);
-void Fire(Player *player);
+void Jump(Player *player, float deltaTime);
+void Fire(Player *player, float deltaTime);
 
-void JumpFire(Player *player);
-void MoveUpFire(Player *player);
+void JumpFire(Player *player, float deltaTime);
+void MoveUpFire(Player *player, float deltaTime);
 
 void ClampPlayerOnScreen(Player *player); // Player stays within screen bounds
 

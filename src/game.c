@@ -8,6 +8,7 @@ void InitGame(GameData *data)
 		SCREEN_WIDTH / 2,	   // Center X
 		SCREEN_HEIGHT / 2,	   // Center Y
 		DEFAULT_PLAYER_RADIUS, // Radius
+		100.0f,				   // Speed
 		100,				   // Health
 		0.0f,				   // Breath timer accumulator
 		GREEN				   // Color

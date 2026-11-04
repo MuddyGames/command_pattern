@@ -5,6 +5,9 @@
 
 #include "player.h"
 
+#define JUMP_HEIGHT 150.0f		// pixels, once per jump
+#define RECOIL_SPEED 180.0f		// pixels per second while firing
+
 // Keep player in screen bounds
 void ClampPlayerOnScreen(Player *player)
 {
@@ -32,73 +35,78 @@ void Idle(Player *player, float deltaTime)
 }
 
 // Move player up
-void MoveUp(Player *player)
+void MoveUp(Player *player, float deltaTime)
 {
 	// Simple move up
-	player->y -= 1;
+	player->y -= player->speed * deltaTime;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
 }
 
 // Move up and Fire
-void MoveUpFire(Player *player)
+void MoveUpFire(Player *player, float deltaTime)
 {
 	// Move up and fire
-	player->y -= 1;
-	player->x -= 3; // Recoil effect
+	player->y -= player->speed * deltaTime;
+	player->x -= RECOIL_SPEED * deltaTime; // Recoil effect
 	player->color = RED; // Change color to indicate firing
 	ClampPlayerOnScreen(player);
 }
 
 // Move player down
-void MoveDown(Player *player)
+void MoveDown(Player *player, float deltaTime)
 {
 	// Simple move down
-	player->y += 1;
+	player->y += player->speed * deltaTime;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
 }
 
 // Move player left
-void MoveLeft(Player *player)
+void MoveLeft(Player *player, float deltaTime)
 {
 	// Simple move left
-	player->x -= 1;
+	player->x -= player->speed * deltaTime;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
 }
 // Move player right
-void MoveRight(Player *player)
+void MoveRight(Player *player, float deltaTime)
 {
 	// Simple move right
-	player->x += 1;
+	player->x += player->speed * deltaTime;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
 }
 // Player fires
-void Fire(Player *player)
+void Fire(Player *player, float deltaTime)
 {
 	// Simple Recoil effect
-	player->x -= 3;
+	player->x -= RECOIL_SPEED * deltaTime;
 	player->color = RED; // Change color to indicate firing
 	ClampPlayerOnScreen(player);
 }
 
-void Jump(Player *player)
+void Jump(Player *player, float deltaTime)
 {
 	// Simple jump effect
-	player->y -= 10;
+	// Once per key press, so a fixed distance
+	// deltaTime not required (unless you want to smoothly animate the jump over time)
+	(void)deltaTime;
+	player->y -= JUMP_HEIGHT;
 	player->color = DARKGREEN; // Change color to indicate Jumping
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player jumped at position (%d, %d)", player->x, player->y);
+	TraceLog(LOG_INFO, "Player jumped at position (%.0f, %.0f)", player->x, player->y);
 }
 
-void JumpFire(Player *player)
+void JumpFire(Player *player, float deltaTime)
 {
 	// Simple jump and fire effect
-	player->y -= 10;
-	player->x -= 3;
+	//deltaTime not required (unless you want to smoothly animate the jump over time)
+	(void)deltaTime;
+	player->y -= JUMP_HEIGHT;
+	player->x -= 3.0f; // Recoil effect
 	player->color = RED; // Change color to indicate firing
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player jumped and fired at position (%d, %d)", player->x, player->y);
+	TraceLog(LOG_INFO, "Player jumped and fired at position (%.0f, %.0f)", player->x, player->y);
 }

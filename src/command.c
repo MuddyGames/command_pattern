@@ -15,25 +15,25 @@ void ExecuteCommand(Command command, Player *player, float deltaTime)
     // MOVE DOWN, LEFT, RIGHT are single commands (no combos)
     // Handle them directly
     if (IsCommandActive(command, MOVE_DOWN))
-        MoveDown(player);
+        MoveDown(player, deltaTime);
 
     if (IsCommandActive(command, MOVE_LEFT))
-        MoveLeft(player);
+        MoveLeft(player, deltaTime);
 
     if (IsCommandActive(command, MOVE_RIGHT))
-        MoveRight(player);
+        MoveRight(player, deltaTime);
 
     // Handle combined commands (combos)
     // Combined MOVE UP AND FIRE
     if (IsCommandActive(command, MOVE_UP) && IsCommandActive(command, FIRE))
     {
-        MoveUpFire(player);
+        MoveUpFire(player, deltaTime);
     }
 
     // Combined JUMP AND FIRE (if not MOVE_UP & FIRE)
     else if (IsCommandActive(command, JUMP) && IsCommandActive(command, FIRE))
     {
-        JumpFire(player);
+        JumpFire(player, deltaTime);
     }
     
     // Handle individual commands such as MOVE UP, JUMP, FIRE after combos
@@ -41,15 +41,15 @@ void ExecuteCommand(Command command, Player *player, float deltaTime)
     {
         if (IsCommandActive(command, MOVE_UP))
         {
-            MoveUp(player);
+            MoveUp(player, deltaTime);
         }
         if (IsCommandActive(command, JUMP))
         {
-            Jump(player);
+            Jump(player, deltaTime);
         }
         if (IsCommandActive(command, FIRE))
         {
-            Fire(player);
+            Fire(player, deltaTime);
         }
     }
 }
