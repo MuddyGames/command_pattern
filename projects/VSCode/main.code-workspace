@@ -190,7 +190,7 @@
 				"name": "Debug",
 				"type": "cppdbg",
 				"request": "launch",
-				"program": "${workspaceFolder:project}/build/desktop-debug/collision_detection",
+				"program": "${workspaceFolder:project}/build/desktop-debug/command_pattern",
 				"cwd": "${workspaceFolder:project}",
 				"args": [],
 				"stopAtEntry": false,
@@ -206,7 +206,7 @@
 					}
 				],
 				"windows": {
-					"program": "${workspaceFolder:project}/build/desktop-debug/collision_detection.exe",
+					"program": "${workspaceFolder:project}/build/desktop-debug/command_pattern.exe",
 					"miDebuggerPath": "C:/raylib/w64devkit/bin/gdb.exe"
 				},
 				"osx": {
