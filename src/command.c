@@ -63,11 +63,12 @@ bool IsCommandActive(Command command, Command filter)
 // Get the binary representation of the command as a string
 // The buffer should be at least COUNT + 1 in size to hold the "string" null terminator
 // Example: For command = MOVE_UP | FIRE, the output will be "100001"
+// Bits are printed from the highest (COUNT - 1) down to bit 0
 void GetCommandBits(Command command, char *buffer)
 {
-    for (int i = COUNT; i >= 0; i--)
+    for (int i = COUNT - 1; i >= 0; i--)
     {
-        buffer[COUNT - i] = (command & (1 << i)) ? '1' : '0';
+        buffer[COUNT - 1 - i] = (command & (1 << i)) ? '1' : '0';
     }
     buffer[COUNT] = '\0'; // null terminator
 }

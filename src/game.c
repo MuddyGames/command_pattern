@@ -16,8 +16,11 @@ void InitGame(GameData *data)
 	// Set player
 	data->player = player;
 
-	// Create Mediator
-	data->mediator = CreateMediator(&data->player);
+	// Initialise HUD
+	InitHud(&data->hud);
+
+	// Create Mediator: it connects the player and the HUD
+	data->mediator = CreateMediator(&data->player, &data->hud);
 	data->activeCommand = NONE;
 
 	// Initialise Input Manage
@@ -32,16 +35,6 @@ void UpdateGame(GameData *data, float deltaTime)
 	MediatorHandleCommand(data->mediator, data->activeCommand, deltaTime);
 }
 
-// Helper function to DrawActiveCommand
-void DrawActiveCommand(Command activeCommand, Command filter, const char *commandText, int *yPositionOffset, Color color)
-{
-	if (IsCommandActive(activeCommand, filter))
-	{
-		DrawText(commandText, 10, *yPositionOffset, DEFAULT_FONT_SIZE, color);
-		*yPositionOffset += DEFAULT_TEXT_Y_OFFSET;
-	}
-}
-
 // Draw Game Data
 void DrawGame(const GameData *data)
 {
@@ -49,6 +42,9 @@ void DrawGame(const GameData *data)
 	Vector2 position = {data->player.x, data->player.y};
 
 	DrawCircleV(position, data->player.r, data->player.color);
+
+	// Drawing HUD
+	DrawHud(&data->hud);
 }
 
 // Close Game and free resources
