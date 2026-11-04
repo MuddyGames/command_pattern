@@ -8,6 +8,7 @@
 #include "constants.h"
 
 #include "player.h"
+#include "hud.h"
 #include "mediator.h"
 
 #include "input_manager.h"
@@ -17,6 +18,7 @@
 typedef struct
 {
     Player player;
+    Hud hud;
     Mediator *mediator;
     Command activeCommand;
 } GameData;
