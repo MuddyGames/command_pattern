@@ -38,7 +38,6 @@ void MoveUp(Player *player)
 	player->y -= 1;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player moved up to (%d, %d)", player->x, player->y);
 }
 
 // Move up and Fire
@@ -49,7 +48,6 @@ void MoveUpFire(Player *player)
 	player->x -= 3; // Recoil effect
 	player->color = RED; // Change color to indicate firing
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player moved up to (%d, %d) and FIRED", player->x, player->y);
 }
 
 // Move player down
@@ -59,7 +57,6 @@ void MoveDown(Player *player)
 	player->y += 1;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player moved down to (%d, %d)", player->x, player->y);
 }
 
 // Move player left
@@ -69,9 +66,7 @@ void MoveLeft(Player *player)
 	player->x -= 1;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player moved left to (%d, %d)", player->x, player->y);
 }
-
 // Move player right
 void MoveRight(Player *player)
 {
@@ -79,9 +74,7 @@ void MoveRight(Player *player)
 	player->x += 1;
 	player->color = GREEN; // Change color to default color
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player moved right to (%d, %d)", player->x, player->y);
 }
-
 // Player fires
 void Fire(Player *player)
 {
@@ -89,7 +82,6 @@ void Fire(Player *player)
 	player->x -= 3;
 	player->color = RED; // Change color to indicate firing
 	ClampPlayerOnScreen(player);
-	TraceLog(LOG_INFO, "Player fired at position (%d, %d)", player->x, player->y);
 }
 
 void Jump(Player *player)
