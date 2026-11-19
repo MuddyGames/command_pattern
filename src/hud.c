@@ -33,7 +33,8 @@ static void DrawActiveCommand(Command activeCommand, Command filter, const char 
 // Draw the HUD on screen
 void DrawHud(const Hud *hud)
 {
-    int y = 10;
+    // Starting position on screen y axis
+    int y = DEFAULT_TEXT_Y_AXIS;
 
     // Command as bits, e.g. MOVE_LEFT | JUMP -> 010100
     char bits[COUNT + 1];
