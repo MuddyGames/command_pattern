@@ -19,8 +19,9 @@ Mediator *CreateMediator(Player *player, Hud *hud)
     return mediator;
 }
 
-// Function to handle command and what needs to be done with it. The mediator is the only place that knows about both the player and the HUD.
-void MediatorHandleCommand(Mediator *mediator, Command command, float deltaTime)
+// Function to handle command and what needs to be done with it. 
+// The mediator is the only place that knows about both the player and the HUD.
+void MediatorNotifyAll(Mediator *mediator, Command command, float deltaTime)
 {
     // One command, two collaborators. Neither knows about the other:
     // The mediator is the only place that knows about both.

@@ -33,7 +33,7 @@ void UpdateGame(GameData *data, float deltaTime)
 {
 	// Poll input and Handle Command
 	data->activeCommand = PollInput();
-	MediatorHandleCommand(data->mediator, data->activeCommand, deltaTime);
+	MediatorNotifyAll(data->mediator, data->activeCommand, deltaTime);
 }
 
 // Draw Game Data

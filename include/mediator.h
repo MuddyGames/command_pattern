@@ -19,7 +19,7 @@ typedef struct Mediator
 // Function to create a mediator instance
 Mediator *CreateMediator(Player *player, Hud *hud);
 
-// Handle Command
-void MediatorHandleCommand(Mediator *mediator, Command command, float deltaTime);
+// Notify whatever systems are interested in Command(s)
+void MediatorNotifyAll(Mediator *mediator, Command command, float deltaTime);
 
 #endif
